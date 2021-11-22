@@ -1,0 +1,20 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE users(
+    username VARCHAR(9) PRIMARY KEY NOT NULL,
+    password VARCHAR(256) NOT NULL
+);
+
+CREATE TABLE categories(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(20) NOT NULL,
+    owner VARCHAR(9) NOT NULL,
+    FOREIGN KEY(owner) REFERENCES users(username) ON DELETE CASCADE
+);
+
+CREATE TABLE posts(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content VARCHAR(256) NOT NULL,
+    categoryid INTEGER NOT NULL,
+    FOREIGN KEY(categoryid) REFERENCES categories(id) ON DELETE CASCADE
+);

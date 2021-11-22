@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">
     <link rel="stylesheet" href="/static/style.css">
-    <title>Classy - Login</title>
+    <title>Classy - Sign In</title>
   </head>
   <body>
     <div class="pure-menu pure-menu-horizontal">
@@ -13,11 +13,12 @@
     </div>
     <div id="main">
       <form class="pure-form pure-form-stacked" id="login" action="/account_login" method="post" enctype="application/x-www-form-urlencoded">
+        <h3>Sign In</h3>
         <fieldset>
           <label for="user">Username</label>
           <input type="text" name="user" placeholder="alanturing" pattern="^[\w]{3,9}$" title="Must be 3 to 9 characters" required />
           <label for="pass">Password</label>
-          <input type="password" name="pass" placeholder="notHunter2" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="Must contain at least 1 number, 1 uppercase letter, 1 lowercase letter, and at least 8 characters in total" required />
+          <input type="password" name="pass" placeholder="notHunter2" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,16}" title="Must contain at least 1 number, 1 uppercase letter, 1 lowercase letter, and 8-16 characters in total" required />
           <button type="submit" class="pure-button pure-button-primary">Sign In</button>
         </fieldset>
         <a class="pure-form-message" href="/create_account">Create an account</a>

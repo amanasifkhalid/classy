@@ -1,0 +1,7 @@
+#!/bin/bash
+# compile
+
+# Stop on errors
+set -Eeuo pipefail
+
+g++ main.cpp cpp/*.cpp -o main.exe -lpthread -lsoci_core -lsoci_sqlite3
