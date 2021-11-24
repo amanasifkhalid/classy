@@ -7,6 +7,24 @@
     <title>Classy</title>
   </head>
   <body>
+    <div class="pure-menu pure-menu-horizontal">
+      <ul class="pure-menu-list">
+        <li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
+          <a href="#" class="pure-menu-link">Manage Account</a>
+          <ul class="pure-menu-children">
+            <li class="pure-menu-item">
+              <a href="/change_password" class="pure-menu-link">Change Password</a>
+            </li>
+            <li class="pure-menu-item">
+              <a href="/delete_account" class="pure-menu-link">Delete Account</a>
+            </li>
+          </ul>
+        </li>
+        <li class="pure-menu-item">
+          <a href="/logout" class="pure-menu-link">Sign Out</a>
+        </li>
+      </ul>
+    </div>
     <h2>Welcome, {{ user }}.</h2>
     <div id="root"></div>
     <noscript>

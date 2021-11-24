@@ -4,14 +4,14 @@
 Database::Database(const std::string& name) : hasher(), sql(soci::sqlite3, name) {}
 
 bool Database::create_user(const std::string& user, const std::string& pass) {
-    const std::string salt = std::to_string(std::time(nullptr));
-    const std::string hash = this->hasher.hash(salt + pass);
-    const std::string db_pass = salt + "$" + hash;
+    const std::string& salt = std::to_string(std::time(nullptr));
+    const std::string& hash = this->hasher.hash(salt + pass);
+    const std::string& db_pass = salt + "$" + hash;
 
     try {
         this->sql << "INSERT INTO users(username, password) VALUES(:user, :pass)",
             soci::use(user), soci::use(db_pass);
-    } catch (soci::soci_error &e) {
+    } catch (soci::soci_error& e) {
         // Username already exists in database
         return false;
     }
@@ -33,7 +33,42 @@ bool Database::check_user_login(const std::string& user, const std::string& pass
     std::size_t split_index = db_pass.find('$');
     const std::string salt(db_pass, 0, split_index);
     const std::string db_hash(db_pass, split_index + 1);
-    const std::string user_hash = this->hasher.hash(salt + pass);
+    const std::string& user_hash = this->hasher.hash(salt + pass);
 
     return user_hash == db_hash;
+}
+
+bool Database::change_password(const std::string& user, const std::string& old_pass,
+    const std::string& new_pass) {
+    if (!this->check_user_login(user, old_pass)) {
+        return false;
+    }
+
+    const std::string& salt = std::to_string(std::time(nullptr));
+    const std::string& hash = this->hasher.hash(salt + new_pass);
+    const std::string& db_pass = salt + "$" + hash;
+    soci::indicator ind;
+
+    try {
+        this->sql << "UPDATE users SET password = :pass WHERE username = :user",
+            soci::use(new_pass), soci::use(user);
+    } catch (soci::soci_error& e) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Database::delete_account(const std::string& user, const std::string& pass) {
+    if (!this->check_user_login(user, pass)) {
+        return false;
+    }
+
+    // try {
+        this->sql << "DELETE FROM users WHERE username = :user", soci::use(user);
+    // } catch (soci::soci_error& e) {
+    //     return false;
+    // }
+
+    return true;
 }

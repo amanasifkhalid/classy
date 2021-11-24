@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Classy - Delete Account</title>
+  </head>
+  <body>
+    <div class="pure-menu pure-menu-horizontal">
+      <a href="#" class="pure-menu-heading pure-menu-link">Classy</a>
+    </div>
+    <div id="main">
+      <form class="pure-form pure-form-stacked" id="login" action="/account_delete" method="post" enctype="application/x-www-form-urlencoded">
+        <h3>Delete your account, {{ user }}?</h3>
+        <fieldset>
+          <label for="pass">Password</label>
+          <input type="password" id="pass" name="pass" placeholder="notHunter2" required />
+          <label for="pass">Re-Enter Password</label>
+          <input type="password" name="pass2" placeholder="notHunter2" required oninput="check(this)" />
+          <button type="submit" class="pure-button delete-btn">Delete Account</button>
+          <a href="/" type="button" class="pure-button">Cancel</a>
+        </fieldset>
+        <p>This action cannot be undone!</p>
+      </form>
+    </div>
+    <script type="text/javascript">
+      function check(input) {
+        if (input.value != document.getElementById("pass").value) {
+          input.setCustomValidity("Passwords must match.");
+        } else {
+          input.setCustomValidity("");
+        }
+      }
+    </script>
+  </body>
+</html>

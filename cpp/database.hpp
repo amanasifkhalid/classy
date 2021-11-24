@@ -15,6 +15,11 @@ public:
     bool create_user(const std::string& user, const std::string& pass);
 
     bool check_user_login(const std::string& user, const std::string& pass);
+
+    bool change_password(const std::string& user, const std::string& old_pass,
+        const std::string& new_pass);
+
+    bool delete_account(const std::string& user, const std::string& pass);
 };
 
 #endif
