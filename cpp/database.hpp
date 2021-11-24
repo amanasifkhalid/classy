@@ -20,6 +20,10 @@ public:
         const std::string& new_pass);
 
     bool delete_account(const std::string& user, const std::string& pass);
+
+    void close() {
+        this->sql.close();
+    }
 };
 
 #endif

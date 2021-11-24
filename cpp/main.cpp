@@ -120,10 +120,10 @@ int main() {
             return;
         }
 
-        crow::json::wvalue res_body;
-        res_body["msg"] = "Login failed; username or password may be incorrect.";
-        res.code = 403;
-        res.end(res_body.dump());
+        crow::mustache::context ctx;
+        ctx["msg"] = "Login failed; username or password may be incorrect.";
+        ctx["back"] = "/login";
+        res.end(crow::mustache::load("error.html").render(ctx));
     });
 
     CROW_ROUTE(app, "/account_create").methods(crow::HTTPMethod::POST)
@@ -140,7 +140,6 @@ int main() {
             success = false;
         }
 
-
         if (success) {
             auto& session = app.get_context<crow::CookieParser>(req);
             session.set_cookie("user", user_input);
@@ -149,10 +148,10 @@ int main() {
             return;
         }
 
-        crow::json::wvalue res_body;
-        res_body["msg"] = "Account creation failed; try another username";
-        res.code = 409;
-        res.end(res_body.dump());
+        crow::mustache::context ctx;
+        ctx["msg"] = "Account creation failed; try another username.";
+        ctx["back"] = "/create_account";
+        res.end(crow::mustache::load("error.html").render(ctx));
     });
 
     CROW_ROUTE(app, "/account_change").methods(crow::HTTPMethod::POST)
@@ -177,10 +176,10 @@ int main() {
             return;
         }
 
-        crow::json::wvalue res_body;
-        res_body["msg"] = "Failed to change password; check your input.";
-        res.code = 403;
-        res.end(res_body.dump());
+        crow::mustache::context ctx;
+        ctx["msg"] = "Failed to change password; check your input.";
+        ctx["back"] = "/change_password";
+        res.end(crow::mustache::load("error.html").render(ctx));
     });
 
     CROW_ROUTE(app, "/account_delete").methods(crow::HTTPMethod::POST)
@@ -205,12 +204,13 @@ int main() {
             return;
         }
 
-        crow::json::wvalue res_body;
-        res_body["msg"] = "Failed to delete account; check your input.";
-        res.code = 403;
-        res.end(res_body.dump());
+        crow::mustache::context ctx;
+        ctx["msg"] = "Failed to delete account; check your input.";
+        ctx["back"] = "/delete_account";
+        res.end(crow::mustache::load("error.html").render(ctx));
     });
 
     app.multithreaded().run();
+    database.close();
     return 0;
 }
