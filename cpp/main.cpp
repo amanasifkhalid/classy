@@ -1,14 +1,17 @@
 #define CROW_MAIN
 
-#include "cpp/crow_all.h"
-#include "cpp/database.hpp"
+#include "crow_all.h"
+#include "database.hpp"
+#include <exception>
 
 int main() {
     std::ios_base::sync_with_stdio(false);
     crow::App<crow::CookieParser> app;
     Database database("classy.db");
 
-    CROW_ROUTE(app, "/")([&app] (const crow::request& req, crow::response& res) {
+    CROW_ROUTE(app, "/")
+        .methods(crow::HTTPMethod::GET, crow::HTTPMethod::POST)
+    ([&app] (const crow::request& req, crow::response& res) {
         // Check if user is logged in
         auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
@@ -60,7 +63,15 @@ int main() {
         auto url_params = crow::query_string("?" + req.body);
         const std::string user_input(url_params.get("user"));
         std::string pass_input(url_params.get("pass"));
-        const bool success = database.check_user_login(user_input, pass_input);
+        bool success;
+
+        try {
+            success = database.check_user_login(user_input, pass_input);
+        } catch (const std::exception& e) {
+            CROW_LOG_ERROR << "Database error: " << e.what() << '\n';
+            success = false;
+        }
+
         std::fill(pass_input.begin(), pass_input.end(), '0');
 
         if (success) {
@@ -84,8 +95,17 @@ int main() {
         auto url_params = crow::query_string("?" + req.body);
         const std::string user_input(url_params.get("user"));
         std::string pass_input(url_params.get("pass"));
+        bool success;
 
-        if (database.create_user(user_input, pass_input)) {
+        try {
+            success = database.create_user(user_input, pass_input);
+        } catch (const std::exception& e) {
+            CROW_LOG_ERROR << "Database error: " << e.what() << '\n';
+            success = false;
+        }
+
+
+        if (success) {
             auto& session = app.get_context<crow::CookieParser>(req);
             session.set_cookie("user", user_input);
             res.code = 303;

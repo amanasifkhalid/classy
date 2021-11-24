@@ -22,7 +22,7 @@ bool Database::create_user(const std::string& user, const std::string& pass) {
 bool Database::check_user_login(const std::string& user, const std::string& pass) {
     std::string db_pass;
     soci::indicator ind;
-    this->sql << "SELECT password FROM users WHERE user = :user",
+    this->sql << "SELECT password FROM users WHERE username = :user",
         soci::into(db_pass, ind), soci::use(user);
 
     if (ind != soci::i_ok) {
