@@ -6,7 +6,7 @@ EXE = classy.exe
 SOURCES = $(wildcard cpp/*.cpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
-release: FLAGS += -03 -DNDEBUG
+release: FLAGS += -O3 -DNDEBUG
 release: classy
 
 classy: $(OBJECTS)
