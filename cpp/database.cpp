@@ -59,10 +59,15 @@ bool Database::delete_account(const std::string& user, const std::string& pass) 
     return true;
 }
 
-void Database::create_category(const std::string& name, const std::string& owner) {
+int Database::create_category(const std::string& name, const std::string& owner) {
     // Throws soci_error
     this->sql << "INSERT INTO categories(name, owner) VALUES(:name, :owner)",
         soci::use(name), soci::use(owner);
+
+    int cat_id;
+    soci::indicator ind;
+    this->sql << "SELECT last_insert_rowid()", soci::into(cat_id, ind);
+    return ind == soci::i_ok ? cat_id : -1;
 }
 
 void Database::rename_category(const int category_id, const std::string& name, const std::string& owner) {
@@ -77,28 +82,59 @@ void Database::delete_category(const int category_id, const std::string& owner) 
         soci::use(category_id), soci::use(owner);
 }
 
-void Database::create_post(const std::string& content, const int category_id) {
+int Database::create_post(const std::string& content, const int category_id) {
     // Throws soci_error
     this->sql << "INSERT INTO posts(content, categoryid) "
         "VALUES(:content, :categoryid)", soci::use(content), soci::use(category_id);
+
+    int post_id;
+    soci::indicator ind;
+    this->sql << "SELECT last_insert_rowid()", soci::into(post_id, ind);
+    return ind == soci::i_ok ? post_id : -1;
 }
 
-void Database::update_post(const int post_id, const std::string& owner, const std::string& content) {
+void Database::update_post(const int post_id, const int cat_id,
+        const std::string& owner, const std::string& content) {
     // Throws soci_error
-    this->sql << "UPDATE posts INNER JOIN categories ON "
-        "posts.categoryid = categories.id SET content = :content WHERE posts.id = :id "
-        "AND categories.owner = :owner", soci::use(content), soci::use(post_id),
-        soci::use(owner);
+    // SQLite doesn't seem to like INNER JOIN with UPDATE statements, hence
+    // the two queries
+    std::string cat_owner;
+    soci::indicator ind;
+    this->sql << "SELECT owner FROM categories WHERE id = :id", soci::use(cat_id),
+        soci::into(cat_owner, ind);
+
+    if (ind == soci::i_ok && cat_owner == owner) {
+        this->sql << "UPDATE posts SET content = :content WHERE id = :id",
+            soci::use(content), soci::use(post_id);
+    } else {
+        throw std::invalid_argument("Failed to update post: Permission denied");
+    }
 }
 
-void Database::delete_post(const int post_id, const std::string& owner) {
+void Database::delete_post(const int post_id, const int cat_id,
+        const std::string& owner) {
     // Throws soci_error
-    this->sql << "DELETE FROM posts INNER JOIN categories ON posts.categoryid = categories.id "
-        "WHERE posts.id = :id AND owner = :owner", soci::use(post_id), soci::use(owner);
+    // SQLite doesn't seem to like INNER JOIN with DELETE statements, hence
+    // the two queries
+    std::string cat_owner;
+    soci::indicator ind;
+    this->sql << "SELECT owner FROM categories WHERE id = :id", soci::use(cat_id),
+        soci::into(cat_owner, ind);
+
+    if (ind == soci::i_ok && cat_owner == owner) {
+        this->sql << "DELETE FROM posts WHERE id = :id", soci::use(post_id);
+    } else {
+        throw std::invalid_argument("Failed to delete post: Permission denied");
+    }
+}
+
+soci::rowset<soci::row> Database::get_categories(const std::string& user) {
+    return (this->sql.prepare << "SELECT id, name FROM categories "
+        "WHERE owner = :user", soci::use(user));
 }
 
 soci::rowset<soci::row> Database::get_posts(const std::string& user) {
-    return (this->sql.prepare << "SELECT id, content, categoryid, "
-        "categories.name as category FROM posts INNER JOIN categories ON "
-        "posts.categoryid = categories.id WHERE owner = :user", soci::use(user));
+    return (this->sql.prepare << "SELECT posts.id, content, categoryid "
+        "FROM posts INNER JOIN categories ON posts.categoryid = categories.id "
+        "WHERE owner = :user", soci::use(user));
 }

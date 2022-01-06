@@ -4,7 +4,7 @@ import App from './app';
 
 ReactDOM.render(
   <App/>,
-  document.getElementById('root');
+  document.getElementById('root')
 );
 
 module.hot.accept();

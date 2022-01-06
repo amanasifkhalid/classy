@@ -9,18 +9,22 @@ module.exports = {
         exclude: /node_modules/,
         use: ["babel-loader"],
       },
+      {
+        test: /\.css$/,
+        use: [{ loader: "style-loader" }, { loader: "css-loader" }],
+      }
     ],
   },
   resolve: {
     extensions: ["*", ".js", ".jsx"],
   },
   output: {
-    path: path.resolve(__dirname, "./dist"),
+    path: path.resolve(__dirname, "./static"),
     filename: "bundle.js",
   },
   plugins: [new webpack.HotModuleReplacementPlugin()],
   devServer: {
-    contentBase: path.resolve(__dirname, "./dist"),
+    contentBase: path.resolve(__dirname, "./static"),
     hot: true,
   },
 };

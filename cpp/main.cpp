@@ -30,37 +30,6 @@ int main() {
 
     CROW_ROUTE(app, "/posts")
     ([&app, &database] (const crow::request& req, crow::response& res) {
-        // Check if user is logged in
-        const auto& session = app.get_context<crow::CookieParser>(req);
-        const std::string& user = session.get_cookie("user");
-
-        if (user.empty()) {
-            res.redirect("/login");
-            res.end();
-        }
-
-        const soci::rowset<soci::row>& rows = database.get_posts(user);
-        std::unordered_map<std::string, std::vector<crow::json::wvalue> > cat_map;
-
-        for (soci::rowset<soci::row>::const_iterator it = rows.begin();
-            it != rows.end(); ++it) {
-            const std::string& content = it->get<std::string>(0);
-            const std::string& category = it->get<std::string>(1);
-            cat_map[category].emplace_back(content);
-        }
-
-        crow::json::wvalue posts;
-
-        for (auto it = cat_map.cbegin(); it != cat_map.cend(); ++it) {
-            posts[it->first] = crow::json::wvalue(it->second);
-        }
-
-        res.end(posts.dump());
-    });
-
-    CROW_ROUTE(app, "/category").methods(crow::HTTPMethod::POST)
-    ([&app, &database] (const crow::request& req, crow::response& res) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -70,8 +39,73 @@ int main() {
         }
 
         try {
-            const std::string cat_name(req.url_params.get("name"));
-            database.create_category(cat_name, user);
+            struct CategoryData {
+                std::vector<crow::json::wvalue> posts;
+                std::string name;
+            };
+
+            const soci::rowset<soci::row>& cat_rows = database.get_categories(user);
+            const soci::rowset<soci::row>& post_rows = database.get_posts(user);
+            std::unordered_map<int, CategoryData> cat_map;
+
+            for (soci::rowset<soci::row>::const_iterator it = cat_rows.begin();
+                    it != cat_rows.end(); ++it) {
+                const int cat_id = it->get<int>(0);
+                const std::string& cat_name = it->get<std::string>(1);
+                cat_map[cat_id] = {std::vector<crow::json::wvalue>(), cat_name};
+            }
+
+            for (soci::rowset<soci::row>::const_iterator it = post_rows.begin();
+                    it != post_rows.end(); ++it) {
+                const int cat_id = it->get<int>(2);
+                const crow::json::wvalue post_data = {
+                    {"id", it->get<int>(0)},
+                    {"content", it->get<std::string>(1)}
+                };
+                cat_map[cat_id].posts.emplace_back(post_data);
+            }
+
+            crow::json::wvalue post_response({});
+
+            for (auto it = cat_map.cbegin(); it != cat_map.cend(); ++it) {
+                const std::string& cat_id = std::to_string(it->first);
+                const CategoryData& data = it->second;
+                post_response[cat_id] = {
+                    {"name", data.name},
+                    {"posts", data.posts}
+                };
+            }
+
+            res.end(post_response.dump());
+        } catch (const std::exception& e) {
+            CROW_LOG_ERROR << e.what();
+            res.code = 400;
+        }
+
+        res.end();
+    });
+
+    CROW_ROUTE(app, "/category").methods(crow::HTTPMethod::POST)
+    ([&app, &database] (const crow::request& req, crow::response& res) {
+        const auto& session = app.get_context<crow::CookieParser>(req);
+        const std::string& user = session.get_cookie("user");
+
+        if (user.empty()) {
+            res.redirect("/login");
+            res.end();
+        }
+
+        try {
+            const crow::json::rvalue& request_body = crow::json::load(req.body);
+            const std::string& cat_name = request_body["name"].s();
+            const int cat_id = database.create_category(cat_name, user);
+
+            if (cat_id == -1) {
+                throw std::invalid_argument("Returned invalid category ID");
+            }
+
+            crow::json::wvalue response = {{"id", cat_id}};
+            res.end(response.dump());
         } catch (const std::exception& e) {
             CROW_LOG_ERROR << e.what();
             res.code = 400;
@@ -82,7 +116,6 @@ int main() {
 
     CROW_ROUTE(app, "/category/<int>").methods(crow::HTTPMethod::PATCH)
     ([&app, &database] (const crow::request& req, crow::response& res, const int cat_id) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -92,7 +125,8 @@ int main() {
         }
 
         try {
-            const std::string cat_name(req.url_params.get("name"));
+            const crow::json::rvalue& request_body = crow::json::load(req.body);
+            const std::string& cat_name = request_body["name"].s();
             database.rename_category(cat_id, cat_name, user);
         } catch (const std::exception& e) {
             CROW_LOG_ERROR << e.what();
@@ -104,7 +138,6 @@ int main() {
 
     CROW_ROUTE(app, "/category/<int>").methods(crow::HTTPMethod::DELETE)
     ([&app, &database] (const crow::request& req, crow::response& res, const int cat_id) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -125,7 +158,6 @@ int main() {
 
     CROW_ROUTE(app, "/post").methods(crow::HTTPMethod::POST)
     ([&app, &database] (const crow::request& req, crow::response& res) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -135,9 +167,17 @@ int main() {
         }
 
         try {
-            const std::string content(req.url_params.get("content"));
-            const int category_id = std::atoi(req.url_params.get("cat-id"));
-            database.create_post(content, category_id);
+            const crow::json::rvalue& request_body = crow::json::load(req.body);
+            const std::string& content = request_body["text"].s();
+            const int category_id = request_body["catid"].u();
+            const int post_id = database.create_post(content, category_id);
+
+            if (post_id == -1) {
+                throw std::invalid_argument("Returned invalid post ID");
+            }
+
+            crow::json::wvalue response = {{"id", post_id}};
+            res.end(response.dump());
         } catch (const std::exception& e) {
             CROW_LOG_ERROR << e.what();
             res.code = 400;
@@ -146,9 +186,9 @@ int main() {
         res.end();
     });
 
-    CROW_ROUTE(app, "/post/<int>").methods(crow::HTTPMethod::PATCH)
-    ([&app, &database] (const crow::request& req, crow::response& res, const int post_id) {
-        // Check if user is logged in
+    CROW_ROUTE(app, "/post/<int>/<int>").methods(crow::HTTPMethod::PATCH)
+    ([&app, &database] (const crow::request& req, crow::response& res,
+            const int cat_id, const int post_id) {
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -158,8 +198,9 @@ int main() {
         }
 
         try {
-            const std::string content(req.url_params.get("content"));
-            database.update_post(post_id, user, content);
+            const crow::json::rvalue& request_body = crow::json::load(req.body);
+            const std::string& content = request_body["content"].s();
+            database.update_post(post_id, cat_id, user, content);
         } catch (const std::exception& e) {
             CROW_LOG_ERROR << e.what();
             res.code = 400;
@@ -168,9 +209,9 @@ int main() {
         res.end();
     });
 
-    CROW_ROUTE(app, "/post/<int>").methods(crow::HTTPMethod::DELETE)
-    ([&app, &database] (const crow::request& req, crow::response& res, const int post_id) {
-        // Check if user is logged in
+    CROW_ROUTE(app, "/post/<int>/<int>").methods(crow::HTTPMethod::DELETE)
+    ([&app, &database] (const crow::request& req, crow::response& res,
+            const int cat_id, const int post_id) {
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -180,7 +221,7 @@ int main() {
         }
 
         try {
-            database.delete_post(post_id, user);
+            database.delete_post(post_id, cat_id, user);
         } catch (const std::exception& e) {
             CROW_LOG_ERROR << e.what();
             res.code = 400;
@@ -191,7 +232,6 @@ int main() {
 
     CROW_ROUTE(app, "/login").methods(crow::HTTPMethod::GET, crow::HTTPMethod::POST)
     ([&app] (const crow::request& req, crow::response& res) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -213,7 +253,6 @@ int main() {
 
     CROW_ROUTE(app, "/create_account")
     ([&app] (const crow::request& req, crow::response& res) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -227,7 +266,6 @@ int main() {
 
     CROW_ROUTE(app, "/change_password")
     ([&app] (const crow::request& req, crow::response& res) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
@@ -243,7 +281,6 @@ int main() {
 
     CROW_ROUTE(app, "/delete_account")
     ([&app] (const crow::request& req, crow::response& res) {
-        // Check if user is logged in
         const auto& session = app.get_context<crow::CookieParser>(req);
         const std::string& user = session.get_cookie("user");
 
