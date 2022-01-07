@@ -2,6 +2,11 @@ body, .pure-menu-children {
   background-color: #eceff1;
 }
 
+.main {
+  display: flex;
+  justify-content: center;
+}
+
 #delete {
   background-color: #ca3c3c;
   color: #fff;

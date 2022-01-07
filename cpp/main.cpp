@@ -9,6 +9,11 @@
 
 int main() {
     std::ios_base::sync_with_stdio(false);
+
+    // Get port from cloud instance
+    const auto port_env = std::getenv("PORT");
+    const int port = port_env == nullptr ? 8080 : std::stoi(port_env);
+
     crow::App<crow::CookieParser> app;
     Database database("classy.db");
 
@@ -385,7 +390,7 @@ int main() {
         res.end(crow::mustache::load("error.html").render(ctx));
     });
 
-    app.multithreaded().run();
+    app.port(port).multithreaded().run();
     database.close();
     return 0;
 }

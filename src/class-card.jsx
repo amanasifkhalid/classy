@@ -46,7 +46,12 @@ class ClassCard extends React.Component {
     .then(data => {
       this.setState(state => {
         const { id } = data;
-        state.posts[id] = <Post key={id} id={id} content={sanitizedValue} />;
+        state.posts[id] = <Post
+                            key={id}
+                            id={id}
+                            content={sanitizedValue}
+                            onDelete={this.deletePost}
+                          />;
         state.showForm = false;
         return state;
       });
