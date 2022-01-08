@@ -20,8 +20,6 @@ RUN cmake -G "Unix Makefiles" -DWITH_BOOST=ON -DWITH_SQLITE3=ON -DSOCI_CXX11=ON 
 
 WORKDIR /v/classy
 RUN make clean
-RUN ldconfig /
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
 RUN g++ -std=c++11 -O3 -L/usr/local/lib64/ -I/usr/local/include/ cpp/*.cpp -o classy.exe -lsoci_core -lsoci_sqlite3 -ldl -lpthread -lsqlite3
 
 RUN strip classy.exe
