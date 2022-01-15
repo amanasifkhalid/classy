@@ -10,7 +10,7 @@ Key features:
 - **Privacy:** No 3rd-party account linking
 
 ## Demo
-You are free to host your own Classy instance (the included Dockerfile may prove useful). For a quick demo, here's my own [instance](https://classy-ulspwccxaq-uc.a.run.app/) hosted on [Google Cloud Run.](https://cloud.google.com/run)
+You are free to host your own Classy instance (the included Dockerfile may prove useful). For a quick demo, here's my own [instance](http://35.238.221.70:8080) hosted on a [Google Cloud Engine](https://cloud.google.com/compute) VM.
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)

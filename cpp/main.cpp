@@ -390,6 +390,7 @@ int main() {
         res.end(crow::mustache::load("error.html").render(ctx));
     });
 
+    app.loglevel(crow::LogLevel::Warning);
     app.port(port).multithreaded().run();
     database.close();
     return 0;
